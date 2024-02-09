@@ -15,8 +15,6 @@ const generateAccessAndRefreshToken = async (userId: any) => {
 
         user.refreshToken = refreshToken
 
-        console.log("aao",user)
-
         await user.save()
 
         return { accessToken, refreshToken }
@@ -72,7 +70,7 @@ export const userLogin = async (req: any, res: Response) => {
 
     if (!findUser) return res.status(400).send(new ApiError(404, "User not found with this username or email"))
 
-    const validPassword = findUser.isPasswordCorrect(req.body.password)
+    const validPassword = await findUser.isPasswordCorrect(req.body.password)
 
     if (!validPassword) return res.status(401).send(new ApiError(401, "Invalid Credentials"))
 

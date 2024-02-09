@@ -55,13 +55,12 @@ userSchema.methods.generateAccessToken = function () {
 
     },
         process.env.ACCESS_JWT_KEY as string,
-        { expiresIn: String(process.env.ACCESS_JWT_EXPIRY)})
+        { expiresIn: process.env.ACCESS_JWT_EXPIRY})
 }
 
 // generate refreshToken
 userSchema.methods.generateRefreshToken = function () {
-
-    return jwt.sign({ _id: this._id }, process.env.REFRESH_JWT_KEY as string, { expiresIn: String(process.env.REFRESH_JWT_EXPIRY)})
+    return jwt.sign({ _id: this._id }, process.env.REFRESH_JWT_KEY as string, { expiresIn: process.env.REFRESH_JWT_EXPIRY })
 }
 
 export const userModel = mongoose.model('user', userSchema)
