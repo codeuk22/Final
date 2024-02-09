@@ -34,7 +34,6 @@ userSchema.pre("save", async function (next) {
     if (this.isModified("password")) {
         this.password = await bcrypt.hash(this.password as string, Number(process.env.SALT as string))
     }
-
     next()
 })
 
@@ -55,14 +54,14 @@ userSchema.methods.generateAccessToken = function () {
         fullName: this.fullName,
 
     },
-    process.env.ACCESS_JWT_KEY as string,
-    { expiresIn: process.env.ACCESS_JWT_EXPIRY })
+        process.env.ACCESS_JWT_KEY as string,
+        { expiresIn: String(process.env.ACCESS_JWT_EXPIRY)})
 }
 
 // generate refreshToken
 userSchema.methods.generateRefreshToken = function () {
 
-    return jwt.sign({ _id: this._id }, process.env.REFRESH_JWT_KEY as string, { expiresIn: process.env.REFRESH_JWT_EXPIRY })
+    return jwt.sign({ _id: this._id }, process.env.REFRESH_JWT_KEY as string, { expiresIn: String(process.env.REFRESH_JWT_EXPIRY)})
 }
 
 export const userModel = mongoose.model('user', userSchema)

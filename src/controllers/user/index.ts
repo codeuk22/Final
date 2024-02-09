@@ -15,6 +15,8 @@ const generateAccessAndRefreshToken = async (userId: any) => {
 
         user.refreshToken = refreshToken
 
+        console.log("aao",user)
+
         await user.save()
 
         return { accessToken, refreshToken }
@@ -29,7 +31,7 @@ export const registerUser = async (req: Request, res: Response) => {
     try {
         const findUser = await userModel.findOne({ $or: [{ username: req.body.username }, { email: req.body.email }] })
 
-        if (findUser) res.status(401).send(new ApiError(409, "User Already Exists with this Credentials"))
+        if (findUser) return res.status(401).send(new ApiError(409, "User Already Exists with this Credentials"))
 
         const avatarLocalPath = (req.files as { avatar?: Express.Multer.File[] }).avatar?.[0]?.path;
 
@@ -55,10 +57,8 @@ export const registerUser = async (req: Request, res: Response) => {
 
         const savedUser = await registerUser.save()
 
-        console.log("fbhds", savedUser)
-
         if (savedUser) {
-            res.status(201).send(new ApiResponse(201, savedUser.select("-password -refreshToken"), "User Registered Successfully"))
+            res.status(201).send(new ApiResponse(201, savedUser, "User Registered Successfully"))
         }
 
     } catch (error: any) {
@@ -66,15 +66,15 @@ export const registerUser = async (req: Request, res: Response) => {
     }
 }
 
-export const userLogin = async (req: Request, res: Response) => {
+export const userLogin = async (req: any, res: Response) => {
 
     const findUser = await userModel.findOne({ $or: [{ email: req.body.email }, { username: req.body.username }] })
 
-    if (!findUser) throw new ApiError(404, "User not found with this username or email")
+    if (!findUser) return res.status(400).send(new ApiError(404, "User not found with this username or email"))
 
-    const validPassword = findUser.isPasswordCorrecd(req.body.password)
+    const validPassword = findUser.isPasswordCorrect(req.body.password)
 
-    if (!validPassword) throw new ApiError(401, "Invalid Credentials")
+    if (!validPassword) return res.status(401).send(new ApiError(401, "Invalid Credentials"))
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(findUser._id)
 

@@ -16,7 +16,6 @@ const userLoginSchema=Joi.object({
 
     email:Joi.string().email().required().trim(),
     password:Joi.string().required().trim(),
-
 })
 
 const userUpdateSchema=Joi.object({
