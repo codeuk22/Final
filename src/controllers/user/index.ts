@@ -3,6 +3,7 @@ import { userModel } from "../../models/user/index"
 import { ApiError } from "../../utils/apiError/index"
 import { uploadOnCloudinary } from "../../utils/cloudinary"
 import { ApiResponse } from "../../utils/apiResponse"
+import jwt, { JwtPayload } from "jsonwebtoken"
 
 
 const generateAccessAndRefreshToken = async (userId: any) => {
@@ -76,7 +77,7 @@ export const userLogin = async (req: any, res: Response) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(findUser._id)
 
-    const updatedUser = await userModel.findByIdAndUpdate(findUser._id, { $set: { refreshToken } }, { new: true })
+    const updatedUser = await userModel.findByIdAndUpdate(findUser._id, { $set: { refreshToken } }, { new: true }).select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
@@ -100,4 +101,36 @@ export const logoutUser = async (req: any, res: Response) => {
     }
 
     return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new ApiResponse(200, {}, "User LoggedOut Successfully"))
+}
+
+export const refreshAccessToken=async(req:any,res:Response)=>{
+    
+    const incomingRefreshToken=req.cookies?.refreshToken || req.body.refreshToken
+
+    if(!incomingRefreshToken) return res.status(401).send(new ApiError(401,"Unauthorized User"))
+
+    try {
+        
+        const verifyToken=jwt.verify(incomingRefreshToken,process.env.REFRESH_JWT_KEY as string)
+    
+        const findUser=await userModel.findById((verifyToken as JwtPayload)?._id)
+    
+        if(!findUser) return res.status(401).send(new ApiError(401,"Invalid Token"))
+    
+        if(incomingRefreshToken!==findUser?.refreshToken) return res.status(401).send(new ApiError(401,"Refresh Token is expired or Invalid"))
+    
+        const options={
+            httpOnly:true,
+            secure:true
+        }
+    
+        const newTokenGenerated=await generateAccessAndRefreshToken(findUser._id)
+    
+        return res.status(200).cookie("accessToken",newTokenGenerated.accessToken,options).cookie("refreshToken",newTokenGenerated.refreshToken,options).send(new ApiResponse(200,{},"Access Token Refreshed Successfully"))
+
+    } catch (error:any) {
+        res.status(400).send(new ApiError(400,"Unable to Generate refresh Access Token",error?.message))
+    }
+
+
 }
