@@ -29,7 +29,7 @@ export const registerUser = async (req: Request, res: Response) => {
     try {
         const findUser = await userModel.findOne({ $or: [{ username: req.body.username }, { email: req.body.email }] })
 
-        if (findUser) throw new ApiError(409, "User Already Exists with this Credentials")
+        if (findUser) res.status(401).send(new ApiError(409, "User Already Exists with this Credentials"))
 
         const avatarLocalPath = (req.files as { avatar?: Express.Multer.File[] }).avatar?.[0]?.path;
 
@@ -55,12 +55,14 @@ export const registerUser = async (req: Request, res: Response) => {
 
         const savedUser = await registerUser.save()
 
+        console.log("fbhds", savedUser)
+
         if (savedUser) {
-            return res.status(201).send(new ApiResponse(201, savedUser.select("-password -refreshToken"), "User Registered Successfully"))
+            res.status(201).send(new ApiResponse(201, savedUser.select("-password -refreshToken"), "User Registered Successfully"))
         }
 
     } catch (error: any) {
-        throw new ApiError(400, "Unable to register User")
+        res.status(400).send(new ApiError(400, "Unable to register User"))
     }
 }
 
