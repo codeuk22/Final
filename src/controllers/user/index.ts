@@ -181,6 +181,8 @@ export const updateProfilePicture = async (req: any, res: Response) => {
 
     if (!waitToUploadAvatar) return res.status(400).send(new ApiError(400, "Unable to upload avatar image on cloudinary"))
 
+    await userModel.findByIdAndUpdate({ _id: req.user._id }, { $unset: { avatar: 1 } })
+
     const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { avatar: waitToUploadAvatar.url } }, { new: true }).select("-password -refreshToken")
 
     res.status(201).send(new ApiResponse(201, { user: updatedUser }, "Profile Picture Updated Successfully"))
@@ -197,11 +199,15 @@ export const updateCoverImage = async (req: any, res: Response) => {
 
     if (!waitToUploadCoverImage) return res.status(400).send(new ApiError(400, "Unable to upload cover image on cloudinary"))
 
+    await userModel.findByIdAndUpdate({ _id: req.user._id }, { $unset: { coverImage: 1 } })
+
     const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { coverImage: waitToUploadCoverImage.url } }, { new: true }).select("-password -refreshToken")
 
     res.status(201).send(new ApiResponse(201, { user: updatedUser }, "Cover Image Updated Successfully"))
-    
+
 }
+
+
 
 
 
