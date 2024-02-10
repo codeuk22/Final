@@ -69,7 +69,7 @@ export const userLogin = async (req: any, res: Response) => {
 
     const findUser = await userModel.findOne({ $or: [{ email: req.body.email }, { username: req.body.username }] })
 
-    if (!findUser) return res.status(400).send(new ApiError(404, "User not found with this username or email"))
+    if (!findUser) return res.status(400).send(new ApiError(400, "User not found with this username or email"))
 
     const validPassword = await findUser.isPasswordCorrect(req.body.password)
 
@@ -103,35 +103,107 @@ export const logoutUser = async (req: any, res: Response) => {
     return res.status(200).clearCookie("accessToken", options).clearCookie("refreshToken", options).json(new ApiResponse(200, {}, "User LoggedOut Successfully"))
 }
 
-export const refreshAccessToken=async(req:any,res:Response)=>{
-    
-    const incomingRefreshToken=req.cookies?.refreshToken || req.body.refreshToken
+export const refreshAccessToken = async (req: any, res: Response) => {
 
-    if(!incomingRefreshToken) return res.status(401).send(new ApiError(401,"Unauthorized User"))
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken
+
+    if (!incomingRefreshToken) return res.status(401).send(new ApiError(401, "Unauthorized User"))
 
     try {
-        
-        const verifyToken=jwt.verify(incomingRefreshToken,process.env.REFRESH_JWT_KEY as string)
-    
-        const findUser=await userModel.findById((verifyToken as JwtPayload)?._id)
-    
-        if(!findUser) return res.status(401).send(new ApiError(401,"Invalid Token"))
-    
-        if(incomingRefreshToken!==findUser?.refreshToken) return res.status(401).send(new ApiError(401,"Refresh Token is expired or Invalid"))
-    
-        const options={
-            httpOnly:true,
-            secure:true
-        }
-    
-        const newTokenGenerated=await generateAccessAndRefreshToken(findUser._id)
-    
-        return res.status(200).cookie("accessToken",newTokenGenerated.accessToken,options).cookie("refreshToken",newTokenGenerated.refreshToken,options).send(new ApiResponse(200,{},"Access Token Refreshed Successfully"))
 
-    } catch (error:any) {
-        res.status(400).send(new ApiError(400,"Unable to Generate refresh Access Token",error?.message))
+        const verifyToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_JWT_KEY as string)
+
+        const findUser = await userModel.findById((verifyToken as JwtPayload)?._id)
+
+        if (!findUser) return res.status(401).send(new ApiError(401, "Invalid Token"))
+
+        if (incomingRefreshToken !== findUser?.refreshToken) return res.status(401).send(new ApiError(401, "Refresh Token is expired or Invalid"))
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+
+        const newTokenGenerated = await generateAccessAndRefreshToken(findUser._id)
+
+        return res.status(200).cookie("accessToken", newTokenGenerated.accessToken, options).cookie("refreshToken", newTokenGenerated.refreshToken, options).send(new ApiResponse(200, {}, "Access Token Refreshed Successfully"))
+
+    } catch (error: any) {
+        res.status(400).send(new ApiError(400, "Unable to Generate refresh Access Token", error?.message))
     }
 
 
 }
+
+export const changeCurrentPassword = async (req: any, res: Response) => {
+
+    const { oldPassword, newPassword } = req.body
+
+    const findUser = await userModel.findById(req.user._id)
+
+    const isPasswordCorrect = await findUser.isPasswordCorrect(oldPassword)
+
+    if (!isPasswordCorrect) return res.status(400).send(new ApiError(400, "Old Password is incorrect"))
+
+    findUser.password = newPassword
+
+    await findUser.save()
+
+    res.status(200).send(new ApiResponse(200, {}, "Password Changed Successfully"))
+
+}
+
+export const getCurrentUser = async (req: any, res: Response) => {
+
+    const findUser = await userModel.findById(req.user._id)
+
+    res.status(200).send(new ApiResponse(200, { user: findUser }, "User Details Fetched Successfully"))
+}
+
+export const updateAccountDetails = async (req: any, res: Response) => {
+
+    const { username, email } = req.body
+
+    const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { username, email } }, { new: true }).select("-password -refreshToken")
+
+    res.status(201).send(new ApiResponse(201, { user: updatedUser }, "Account Details Updated Successfully"))
+
+
+}
+
+export const updateProfilePicture = async (req: any, res: Response) => {
+
+    const avatarLocalPath = (req.file as { avatar?: Express.Multer.File[] }).avatar?.[0]?.path
+
+    if (!avatarLocalPath) return res.status(400).send(new ApiError(400, "Avatar is missing"))
+
+    const waitToUploadAvatar = await uploadOnCloudinary(avatarLocalPath)
+
+    if (!waitToUploadAvatar) return res.status(400).send(new ApiError(400, "Unable to upload avatar image on cloudinary"))
+
+    const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { avatar: waitToUploadAvatar.url } }, { new: true }).select("-password -refreshToken")
+
+    res.status(201).send(new ApiResponse(201, { user: updatedUser }, "Profile Picture Updated Successfully"))
+
+}
+
+export const updateCoverImage = async (req: any, res: Response) => {
+
+    const coverImageLocalPath = (req.file as { coverImage?: Express.Multer.File[] }).coverImage?.[0]?.path
+
+    if (!coverImageLocalPath) return res.status(400).send(new ApiError(400, "Cover Image is missing"))
+
+    const waitToUploadCoverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!waitToUploadCoverImage) return res.status(400).send(new ApiError(400, "Unable to upload cover image on cloudinary"))
+
+    const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { coverImage: waitToUploadCoverImage.url } }, { new: true }).select("-password -refreshToken")
+
+    res.status(201).send(new ApiResponse(201, { user: updatedUser }, "Cover Image Updated Successfully"))
+    
+}
+
+
+
+
 
