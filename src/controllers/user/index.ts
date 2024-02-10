@@ -61,7 +61,7 @@ export const registerUser = async (req: Request, res: Response) => {
         }
 
     } catch (error: any) {
-        res.status(400).send(new ApiError(400, "Unable to register User"))
+        res.status(400).send(new ApiError(400, "Unable to register User",error?.message))
     }
 }
 
@@ -155,7 +155,7 @@ export const changeCurrentPassword = async (req: any, res: Response) => {
 
 export const getCurrentUser = async (req: any, res: Response) => {
 
-    const findUser = await userModel.findById(req.user._id)
+    const findUser = await userModel.findById(req.user._id).select("-password -refreshToken")
 
     res.status(200).send(new ApiResponse(200, { user: findUser }, "User Details Fetched Successfully"))
 }

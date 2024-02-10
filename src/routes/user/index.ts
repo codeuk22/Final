@@ -17,7 +17,7 @@ router.post("/refresh-token", refreshAccessToken)
 router.post("/change-password", validateUserPasswordUpdate, verifyJWT, changeCurrentPassword)
 router.post("/change-avatar-image", upload.fields([{ name: "avatar", maxCount: 1 }]), verifyJWT, updateProfilePicture)
 router.post("/change-cover-image", upload.fields([{ name: "coverImage", maxCount: 1 }]), verifyJWT, updateCoverImage)
-router.post("update-use",validateUserUpdate, verifyJWT, updateAccountDetails)
+router.post("update-user",validateUserUpdate, verifyJWT, updateAccountDetails)
 router.get("/profile", verifyJWT, getCurrentUser)
 
 
