@@ -61,7 +61,7 @@ export const registerUser = async (req: Request, res: Response) => {
         }
 
     } catch (error: any) {
-        res.status(400).send(new ApiError(400, "Unable to register User",error?.message))
+        res.status(400).send(new ApiError(400, "Unable to register User", error?.message))
     }
 }
 
@@ -205,6 +205,70 @@ export const updateCoverImage = async (req: any, res: Response) => {
 
     res.status(201).send(new ApiResponse(201, { user: updatedUser }, "Cover Image Updated Successfully"))
 
+}
+
+export const getUSerChannelProfile = async (req: any, res: Response) => {
+
+    const { username } = req.params
+
+    if (!username) return res.status(400).send(new ApiError(400, "Username is missing"))
+
+    const channel = await userModel.aggregate([
+
+        {
+
+            $match: { username: username }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            }
+        },
+        {
+            $addFields: {
+                subscibersCount: {
+                    $size: "$subscribers"
+                },
+                channelsSubscribedToCount: {
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: { $eq: [req.user?._id, "$subscribers.subscriber"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                username: 1,
+                avatar: 1,
+                isSubscribed: 1,
+                subscibersCount: 1,
+                channelsSubscribedToCount: 1,
+                coverImage: 1,
+                email: 1
+            }
+        }
+    ])
+
+    if (!channel) return res.status(404).send(new ApiError(404, "Channel not found"))
+
+    return res.status(200).send(new ApiResponse(200, channel[0], "Channel Details Fetched Successfully"))
 }
 
 
