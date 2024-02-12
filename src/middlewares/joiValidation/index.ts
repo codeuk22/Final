@@ -29,6 +29,11 @@ const userPasswordUpdateSchema = Joi.object({
     confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required().trim(),
 })
 
+const playlistSchema = Joi.object({
+    name: Joi.string().required().trim(),
+    description: Joi.string().required().trim(),
+})
+
 
 export const validateUserRegister = (req: any, res: any, next: any) => {
 
@@ -66,6 +71,17 @@ export const validateUserUpdate = (req: any, res: any, next: any) => {
 export const validateUserPasswordUpdate = (req: any, res: any, next: any) => {
 
     const { error } = userPasswordUpdateSchema.validate(req.body)
+    if (error) {
+        return res.status(400).json({
+            error: error.details[0].message.split('\"').join("")
+        })
+    }
+    next()
+}
+
+export const validatePlaylistSchema = (req: any, res: any, next: any) => {
+
+    const { error } = playlistSchema.validate(req.body)
     if (error) {
         return res.status(400).json({
             error: error.details[0].message.split('\"').join("")
