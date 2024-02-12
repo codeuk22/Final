@@ -1,9 +1,10 @@
 import { Request, Response } from "express"
+import mongoose from "mongoose"
+import jwt, { JwtPayload } from "jsonwebtoken"
 import { userModel } from "../../models/user/index"
 import { ApiError } from "../../utils/apiError/index"
 import { uploadOnCloudinary } from "../../utils/cloudinary"
 import { ApiResponse } from "../../utils/apiResponse"
-import jwt, { JwtPayload } from "jsonwebtoken"
 
 
 const generateAccessAndRefreshToken = async (userId: any) => {
@@ -270,6 +271,52 @@ export const getUSerChannelProfile = async (req: any, res: Response) => {
 
     return res.status(200).send(new ApiResponse(200, channel[0], "Channel Details Fetched Successfully"))
 }
+
+export const getUserWatchHistory = async (req: any, res: Response) => {
+
+    const user = await userModel.aggregate([
+        {
+            $match: {
+                _id: mongoose.Types.ObjectId.createFromTime(req.user?._id)
+            },
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $arrayElemAt: ["$owner", 0]
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+
+    return res.status(200).send(new ApiResponse(200, user[0].watchHistory, "Watch History Fetched Successfully"))
+}
+
 
 
 
