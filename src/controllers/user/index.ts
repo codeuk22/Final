@@ -178,11 +178,11 @@ export const updateProfilePicture = async (req: any, res: Response) => {
 
     if (!avatarLocalPath) return res.status(400).send(new ApiError(400, "Avatar is missing"))
 
+    await userModel.findByIdAndUpdate({ _id: req.user._id }, { $unset: { avatar: 1 } })
+
     const waitToUploadAvatar = await uploadOnCloudinary(avatarLocalPath)
 
     if (!waitToUploadAvatar) return res.status(400).send(new ApiError(400, "Unable to upload avatar image on cloudinary"))
-
-    await userModel.findByIdAndUpdate({ _id: req.user._id }, { $unset: { avatar: 1 } })
 
     const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { avatar: waitToUploadAvatar.url } }, { new: true }).select("-password -refreshToken")
 
@@ -196,11 +196,11 @@ export const updateCoverImage = async (req: any, res: Response) => {
 
     if (!coverImageLocalPath) return res.status(400).send(new ApiError(400, "Cover Image is missing"))
 
+    await userModel.findByIdAndUpdate({ _id: req.user._id }, { $unset: { coverImage: 1 } })
+
     const waitToUploadCoverImage = await uploadOnCloudinary(coverImageLocalPath)
 
     if (!waitToUploadCoverImage) return res.status(400).send(new ApiError(400, "Unable to upload cover image on cloudinary"))
-
-    await userModel.findByIdAndUpdate({ _id: req.user._id }, { $unset: { coverImage: 1 } })
 
     const updatedUser = await userModel.findByIdAndUpdate({ _id: req.user._id }, { $set: { coverImage: waitToUploadCoverImage.url } }, { new: true }).select("-password -refreshToken")
 
@@ -316,6 +316,8 @@ export const getUserWatchHistory = async (req: any, res: Response) => {
 
     return res.status(200).send(new ApiResponse(200, user[0].watchHistory, "Watch History Fetched Successfully"))
 }
+
+
 
 
 

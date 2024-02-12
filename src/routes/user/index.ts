@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changeCurrentPassword, getCurrentUser, logoutUser, refreshAccessToken, registerUser, updateAccountDetails, updateCoverImage, updateProfilePicture, userLogin } from "../../controllers/user/index";
+import { changeCurrentPassword, getCurrentUser, getUSerChannelProfile, getUserWatchHistory, logoutUser, refreshAccessToken, registerUser, updateAccountDetails, updateCoverImage, updateProfilePicture, userLogin } from "../../controllers/user/index";
 import { upload } from "../../middlewares/multer/index";
 import { validateUserLogin, validateUserPasswordUpdate, validateUserRegister, validateUserUpdate } from "../../middlewares/joiValidation/index";
 import { verifyJWT } from "../../middlewares/jwtValidation/index";
@@ -13,9 +13,12 @@ router.post("/login", validateUserLogin, userLogin)
 router.post("/logout", verifyJWT, logoutUser)
 router.post("/refresh-token", refreshAccessToken)
 router.post("/change-password", validateUserPasswordUpdate, verifyJWT, changeCurrentPassword)
-router.post("/change-avatar-image", upload.fields([{ name: "avatar", maxCount: 1 }]), verifyJWT, updateProfilePicture)
-router.post("/change-cover-image", upload.fields([{ name: "coverImage", maxCount: 1 }]), verifyJWT, updateCoverImage)
-router.post("update-user", validateUserUpdate, verifyJWT, updateAccountDetails)
+router.put("/change-avatar-image", verifyJWT, upload.single({name: "avatar",maxCount:1}), updateProfilePicture)
+router.put("/change-cover-image", verifyJWT, upload.single(name: "coverImage"), updateCoverImage)
+router.put("update-user", validateUserUpdate, verifyJWT, updateAccountDetails)
 router.get("/profile", verifyJWT, getCurrentUser)
+
+router.get("/channel/:username", verifyJWT, getUSerChannelProfile)
+router.get("/history", verifyJWT, getUserWatchHistory)
 
 export default router
