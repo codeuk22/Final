@@ -94,7 +94,7 @@ export const logoutUser = async (req: any, res: Response) => {
 
     const userId = req.user._id
 
-    const user = await userModel.findByIdAndUpdate(userId, { $set: { refreshToken: "" } }, { new: true })
+    const user = await userModel.findByIdAndUpdate(userId, { $unset: { refreshToken: 1 } }, { new: true })
 
     const options = {
         httpOnly: true,
